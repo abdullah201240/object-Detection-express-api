@@ -1,5 +1,14 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken'
+const createToken = ({ id, email, name }) => {
+  const secretKey = process.env.JWT_SECRET || 'default_secret_key'
+  const expiresIn = '1h'; 
+
+  const token = jwt.sign({ id, email, name }, secretKey, { expiresIn });
+
+  return token;
+};
 const Signup = async (req, res) => {
     try {
       const { name, email, password } = req.body;
@@ -21,9 +30,9 @@ const Signup = async (req, res) => {
   };
   const Login = async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email: reqEmail, password } = req.body;
   
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email: reqEmail });
   
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
@@ -34,14 +43,17 @@ const Signup = async (req, res) => {
       if (!passwordMatch) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
+      
+      const { id, email, name } = user;
+      const token = createToken({ id, email, name });
+      return res.status(200).json({ token, id, email, name });
   
-  
-      return res.status(200).json({ message: 'Login successful' });
     } catch (error) {
       console.error('Error in login:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
-  };
+};
+
 
 
   export { Signup,Login};
